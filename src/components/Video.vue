@@ -53,6 +53,19 @@ export default {
     position: relative;
     height: 400px;
 
+    @media screen and(max-width: 1000px) {
+      height: 220px;
+    }
+    @media screen and(max-width: 800px) {
+      height: 400px;
+    }
+    @media screen and(max-width: 700px) {
+      height: 300px;
+    }
+    @media screen and(max-width: 500px) {
+      height: 200px;
+    }
+
     .thumbnail {
       z-index: 0;
       width: 100%;
@@ -66,6 +79,7 @@ export default {
       bottom: 0;
       left: 0;
       object-fit: cover;
+      transition: opacity 200ms;
 
       &:hover {
         opacity: 1;
@@ -81,6 +95,7 @@ export default {
     bottom: 0.1em;
     left: 0.5em;
     color: white !important;
+    text-shadow: 0 0 4px black;
   }
 }
 </style>
