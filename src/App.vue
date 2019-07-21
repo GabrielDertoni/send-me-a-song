@@ -6,7 +6,7 @@
     </div>
     <Searchbar
       class="searchbar"
-      :class="{ 'shrink': results.length > 0 }"
+      :class="{ shrink: results.length > 0 }"
       @submit="loadSearchResults"
     ></Searchbar>
     <Loading v-if="loading"></Loading>
@@ -27,8 +27,6 @@ import Searchbar from "./components/Searchbar.vue";
 import Results from "./components/Results.vue";
 import Loading from "./components/Loading.vue";
 
-import { async } from "q";
-
 export default {
   name: "app",
   components: {
@@ -36,67 +34,44 @@ export default {
     Results,
     Loading
   },
-  beforeCreate() {
-    const firebaseConfig = {
-      apiKey: "AIzaSyCRSLTOfFPEoW4nzi801Z2v7zTKb4zFpI4",
-      authDomain: "send-me-a-song-38668.firebaseapp.com",
-      databaseURL: "https://send-me-a-song-38668.firebaseio.com",
-      projectId: "send-me-a-song-38668",
-      storageBucket: "",
-      messagingSenderId: "720129918335",
-      appId: "1:720129918335:web:89758e8c1fa07713"
-    };
-    firebase.initializeApp(firebaseConfig);
-  },
-  mounted() {
-    this.database = firebase.database();
-    this.ref = this.database.ref("songs");
-  },
   data() {
     return {
-      api_key: "AIzaSyBSyWKyufN3lnDpFpNddiTOLLfRYol-w-s",
       loading: false,
-      results: [],
-      database: undefined,
-      ref: undefined
+      results: []
     };
   },
   methods: {
-    checkDuplicated: async function(video) {
-      let stored = (await this.ref.once("value")).val();
-      for (let id in stored) {
-        if (stored[id].id === video.id) {
-          return true;
-        }
-      }
-      return false;
-    },
     handleVideoSelected(video) {
-      this.checkDuplicated(video).then(r => {
-        if (!r) {
-          this.ref.push({
-            link: `https://www.youtube.com/watch?v=${video.id}`,
-            ...video
-          });
-          confirm("Obrigado por sua recomendação!");
-        } else {
-          confirm("Alguém já deu essa sugestão, tente sugerir outra coisa.");
-        }
-
-        document.location.reload();
-      });
+      const url = `https://us-central1-send-me-a-song-38668.cloudfunctions.net/postVideo`;
+      // const url = `http://localhost:5000/send-me-a-song-38668/us-central1/postVideo`;
+      fetch(url, {
+        method: "POST",
+        body: JSON.stringify({
+          link: `https://www.youtube.com/watch?v=${video.id}`,
+          ...video
+        })
+      })
+        .then(response => response.json())
+        .then(response => {
+          console.log(response);
+          if (response.success) {
+            confirm("Obrigado por sua recomendação!");
+          } else if (response.message === "Data already exists in database.") {
+            confirm("Alguem já fez essa sugestão, tente fazer outra.");
+          } else {
+            confirm(
+              "Ocorreu um erro ao acessar o banco de dados... Tente novamente mais tarde."
+            );
+          }
+          document.location.reload();
+        })
+        .catch(error => {
+          console.error(error);
+          confirm("Ocorreu um erro... Tente novamente mais tarde.");
+        });
     },
     parseResponse(response) {
-      let videos = [];
-      for (let item of response.items) {
-        videos.push({
-          id: item.id.videoId,
-          title: item.snippet.title,
-          description: item.snippet.description,
-          thumbnails: item.snippet.thumbnails
-        });
-      }
-      this.results = videos;
+      this.results = response.videos;
       this.loading = false;
     },
     loadSearchResults: async function(search) {
@@ -107,14 +82,11 @@ export default {
       }
 
       this.loading = true;
-      fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${search}&type=video&key=${this.api_key}&maxResults=4`
-      )
+      const url = `https://us-central1-send-me-a-song-38668.cloudfunctions.net/getYouTubeSearchResults?search=${search}&maxResults=4`;
+      // const url = `http://localhost:5000/send-me-a-song-38668/us-central1/getYouTubeSearchResults?search=${search}&maxResults=4`;
+      fetch(url)
         .then(response => response.json())
         .then(this.parseResponse);
-    },
-    loadDeezerSearchResults: async function(search) {
-      this.loading = true;
     }
   }
 };

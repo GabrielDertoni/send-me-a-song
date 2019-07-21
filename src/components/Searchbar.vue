@@ -2,7 +2,12 @@
   <div class="searchbar-wrapper">
     <div class="inner-wrapper">
       <form class="form" @submit.prevent="submit">
-        <input class="searchbar" type="text" v-model="search" :placeholder="placeholder" />
+        <input
+          class="searchbar"
+          type="text"
+          v-model="search"
+          :placeholder="placeholder"
+        />
         <img src="../assets/magnifier.svg" @click="submit" />
       </form>
     </div>
@@ -240,5 +245,3 @@ export default {
   }
 }
 </style>
-
-
