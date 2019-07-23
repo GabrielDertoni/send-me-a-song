@@ -13,7 +13,7 @@
     <Results
       v-if="results.length > 0 && !loading"
       :results="results"
-      @result-selected="handleVideoSelected"
+      @result-selected="handleVideoSelectedGraphQL"
     ></Results>
     <div class="footer">
       <p>powered by</p>
@@ -26,6 +26,10 @@
 import Searchbar from "./components/Searchbar.vue";
 import Results from "./components/Results.vue";
 import Loading from "./components/Loading.vue";
+
+import { PostVideoMutation } from './graphql/PostVideo.js';
+// import gql from 'graphql-tag';
+// import { post } from 'axios';
 
 export default {
   name: "app",
@@ -41,6 +45,35 @@ export default {
     };
   },
   methods: {
+    handleVideoSelectedGraphQL(video) {
+      this.loding = true;
+      this.$apollo.mutate({
+        mutation: PostVideoMutation,
+        variables: {
+          video: {
+            link: `https://www.youtube.com/watch?v=${video.id}`,
+            ...video
+          }
+        }
+      })
+      .then(response => {
+        this.loading = false;
+
+        const data = response.data;
+        if (data.success)
+          confirm("Obrigado por sua recomendação!");
+        else if (data.message === "Data already exists in database.")
+          confirm("Alguem já fez essa sugestão, tente fazer outra.");
+        else
+          confirm("Ocorreu um erro ao acessar o banco de dados... Tente novamente mais tarde.");
+      })
+      .catch(error => {
+        this.loading = false;
+        
+        console.error(error);
+        confimr("Sorry, an error has occurred, try again later.");
+      });
+    },
     handleVideoSelected(video) {
       const url = `https://us-central1-send-me-a-song-38668.cloudfunctions.net/postVideo`;
       // const url = `http://localhost:5000/send-me-a-song-38668/us-central1/postVideo`;
