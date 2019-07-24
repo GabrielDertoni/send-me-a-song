@@ -1,10 +1,10 @@
-import gql from 'graphql-tag';
+import gql from "graphql-tag";
 
 export const PostVideoMutation = gql`
-mutation PostVideoMutation($video: VideoInput!) {
-    postVideo(video: $video) {
-        message
-        success
+  mutation PostVideoMutation($videoId: ID!, $title: String!) {
+    postVideo(videoId: $videoId, title: $title) {
+      message
+      success
     }
-}
-`
+  }
+`;

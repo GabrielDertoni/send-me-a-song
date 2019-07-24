@@ -15,6 +15,7 @@ type Video {
     id: ID!
     link: String!
     title: String!
+    description: String!
     thumbnails: Thumbnails
 }
 `

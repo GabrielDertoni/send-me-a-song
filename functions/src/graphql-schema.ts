@@ -10,7 +10,7 @@ admin.initializeApp({
     databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`
 });
 
-const objectToList = (obj: any) => Object.keys(obj).map(key => obj[key]);
+const listValues = (obj: any) => Object.keys(obj).map(key => obj[key]);
 
 interface Thumbnail {
     url?: String,
@@ -26,6 +26,7 @@ interface Video {
     id?: String,
     link?: String,
     title?: String,
+    description?: String,
     thumbnails?: Thumbnails
 }
 interface YouTubeSearchResultResponse {
@@ -83,11 +84,13 @@ interface YTAPI_Response {
 
 export const resolvers = {
     Query: {
-        videos: (parent: any, args: any) => admin.database().ref("songs")
+        videos: (parent: any, args: any) => {
+          return admin.database().ref("songs")
             .once("value")
             .then(snap => snap.val())
-            .then(val => objectToList(val))
-            .catch(console.log),
+            .then(val => listValues(val))
+            .catch(console.log)
+        },
         queryYouTube: async function(parent: any, args: any): Promise<YTAPI_Response> {
             try {
                 const API_key = (await admin.database().ref("API_KEYS/youtube").once("value")).val()
@@ -136,7 +139,8 @@ export const resolvers = {
                         key: API_key,
                         part: "snippet",
                         q: args.search,
-                        maxResults: args.maxResults
+                        maxResults: args.maxResults,
+                        type: "video"
                     });
                     
                     const videos = [];
@@ -149,6 +153,7 @@ export const resolvers = {
                                     id: item.id.videoId,
                                     link: base_url + item.id.videoId,
                                     title: item.snippet.title,
+                                    description: item.snippet.description,
                                     thumbnails: item.snippet.thumbnails
                                 });
                             }
@@ -183,7 +188,7 @@ export const resolvers = {
             try {
                 const snap = await admin.database().ref("songs").once("value");
                 const val = snap.val();
-                const duplicate: Video | undefined = find(objectToList(val), { id: args.video.id });
+                const duplicate: Video | undefined = find(listValues(val), { id: args.videoId });
                 // If the video id already exists in the database, send an error message.
                 if (duplicate) {
                     const message: PostVideoResponse = {
@@ -193,8 +198,10 @@ export const resolvers = {
                     return message;
                 } else {
                     try {
-                        const toValidObject = (obj: any) => JSON.parse(JSON.stringify(obj));
-                        await admin.database().ref("songs").push(toValidObject(args.video));
+                        await admin.database().ref("songs").push({
+                          id: args.videoId,
+                          title: args.title
+                        });
                         const message: PostVideoResponse = {
                             message: "Success",
                             success: true
